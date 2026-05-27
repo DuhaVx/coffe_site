@@ -4,5 +4,4 @@
   <rect x="260" y="220" width="280" height="160" rx="20" fill="#3a2a22"/>
   <ellipse cx="400" cy="290" rx="120" ry="70" fill="#2b1b15"/>
   <path d="M570 240 Q700 300 570 360" stroke="#5e473b" stroke-width="28" fill="none" stroke-linecap="round"/>
-  <text x="90" y="90" fill="#c0693a" font-size="42" font-family="Arial">0:0> "8@?8G"</text>
 </svg>

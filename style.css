@@ -3,7 +3,7 @@
 }
 
 html {
-  scroll-behavior: auto;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -75,10 +75,11 @@ body {
 }
 
 .hero {
-  min-height: 72vh;
-  background-image: linear-gradient(rgba(15, 15, 15, 0.58), rgba(15, 15, 15, 0.8)), url("https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1400&q=80");
+  min-height: 52vh;
+  background-image: linear-gradient(rgba(15, 15, 15, 0.45), rgba(15, 15, 15, 0.65)), url("assets/67.avif");
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
 }
@@ -123,7 +124,7 @@ body {
 
 .card img {
   width: 100%;
-  height: 220px;
+  height: 420px;
   object-fit: cover;
   border: 1px solid #2f2a27;
   margin-bottom: 10px;
@@ -483,7 +484,7 @@ body {
 
 @media (max-width: 520px) {
   .hero {
-    min-height: 58vh;
+    min-height: 46vh;
   }
 
   .hero-overlay {

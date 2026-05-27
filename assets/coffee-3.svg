@@ -4,5 +4,4 @@
   <rect x="300" y="120" width="200" height="310" rx="20" fill="#2f241f"/>
   <ellipse cx="400" cy="275" rx="70" ry="120" fill="#6f4f3b"/>
   <ellipse cx="400" cy="430" rx="120" ry="35" fill="#5d473a"/>
-  <text x="80" y="80" fill="#c0693a" font-size="42" font-family="Arial">$8;LB@ "12>4=K9"</text>
 </svg>

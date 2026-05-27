@@ -4,5 +4,4 @@
   <circle cx="400" cy="290" r="120" fill="#6f4b39"/>
   <circle cx="400" cy="290" r="78" fill="#d8b27a"/>
   <path d="M350 250 Q400 200 450 250" stroke="#e7d2b2" stroke-width="14" fill="none" stroke-linecap="round"/>
-  <text x="110" y="90" fill="#c0693a" font-size="42" font-family="Arial">(C A >1;5?8E>9</text>
 </svg>

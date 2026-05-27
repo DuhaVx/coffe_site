@@ -1,36 +1,44 @@
-otrisovkaFrazy();
+function showFatal(text) {
+  const old = document.getElementById("fatalBox");
+  if (old) old.remove();
+  const box = document.createElement("div");
+  box.id = "fatalBox";
+  box.style.position = "fixed";
+  box.style.left = "12px";
+  box.style.right = "12px";
+  box.style.bottom = "12px";
+  box.style.zIndex = "9999";
+  box.style.background = "#2a1515";
+  box.style.border = "1px solid #c0693a";
+  box.style.color = "#efe5dd";
+  box.style.padding = "10px 12px";
+  box.style.fontFamily = "PT Sans, Arial, sans-serif";
+  box.style.whiteSpace = "pre-wrap";
+  box.textContent = text;
+  document.body.appendChild(box);
+}
 
-const cartKnopka = document.getElementById("cartToggle");
-const modalka = document.getElementById("cartModal");
-let closeKnopka = document.getElementById("closeCart");
-const cartList = document.getElementById("cartList");
-let totalPrice = document.getElementById("totalPrice");
-const cartCount = document.getElementById("cartCount");
-const clearCart = document.getElementById("clearCart");
-let logoKnopka = document.getElementById("logoKnopka");
-const menuGrid = document.getElementById("menuGrid");
-const checkoutBtn = document.getElementById("checkoutBtn");
-const orderName = document.getElementById("orderName");
-const orderPhone = document.getElementById("orderPhone");
-const adminPin = document.getElementById("adminPin");
-const adminEnter = document.getElementById("adminEnter");
-const adminPanel = document.getElementById("adminPanel");
-const adminForm = document.getElementById("adminForm");
-const newsForm = document.getElementById("newsForm");
-const ordersList = document.getElementById("ordersList");
-const adminMenuCount = document.getElementById("adminMenuCount");
-const adminOrdersToday = document.getElementById("adminOrdersToday");
-const adminMenuList = document.getElementById("adminMenuList");
-const newsGrid = document.getElementById("newsGrid");
-const adminNewsList = document.getElementById("adminNewsList");
+window.addEventListener("error", (e) => {
+  showFatal(`JS упал: ${e.message}\n${e.filename}:${e.lineno}`);
+});
+
+window.addEventListener("unhandledrejection", (e) => {
+  const msg = e.reason && e.reason.message ? e.reason.message : String(e.reason);
+  showFatal(`JS упал: ${msg}`);
+});
+
+let cartKnopka, modalka, closeKnopka, cartList, totalPrice, cartCount, clearCart;
+let logoKnopka, menuGrid, checkoutBtn, orderName, orderPhone;
+let adminPin, adminEnter, adminPanel, adminForm, newsForm, ordersList;
+let adminMenuCount, adminOrdersToday, adminMenuList, newsGrid, adminNewsList, adminLogin;
 
 const defaultMenu = [
-  { id: 1, nazvanie: 'Раф "Циолковский"', cena: 320, image: "assets/coffee-1.svg", opis: "Сливочный раф с мягкой ванильной нотой", meta: "300 мл · молочный" },
-  { id: 2, nazvanie: 'Эспрессо "Смена"', cena: 180, image: "assets/coffee-2.svg", opis: "Плотный шот, горький шоколад и сухой орех", meta: "30 мл · классика" },
-  { id: 3, nazvanie: 'Фильтр "Обводный"', cena: 260, image: "assets/coffee-3.svg", opis: "Спокойная чашка для длинного разговора", meta: "250 мл · зерно дня" },
-  { id: 4, nazvanie: 'Какао "Кирпич"', cena: 240, image: "assets/coffee-4.svg", opis: "Густое какао на молоке, без лишней сладости", meta: "280 мл · без кофеина" },
-  { id: 5, nazvanie: "Круассан с солью", cena: 210, image: "assets/coffee-5.svg", opis: "Хрустящее тесто и сливочное послевкусие", meta: "утренняя выпечка" },
-  { id: 6, nazvanie: "Шу с облепихой", cena: 230, image: "assets/coffee-6.svg", opis: "Заварное тесто и яркий кислый крем", meta: "десерт дня" }
+  { id: 1, nazvanie: 'Раф "Циолковский"', cena: 320, image: "assets/раф.jpg", opis: "Сливочный раф с мягкой ванильной нотой", meta: "300 мл · молочный" },
+  { id: 2, nazvanie: 'Эспрессо "Смена"', cena: 180, image: "assets/Экс.jpg", opis: "Плотный шот, горький шоколад и сухой орех", meta: "30 мл · классика" },
+  { id: 3, nazvanie: 'Фильтр "Обводный"', cena: 260, image: "assets/америк.jpg", opis: "Спокойная чашка для длинного разговора", meta: "250 мл · зерно дня" },
+  { id: 4, nazvanie: 'Какао "Кирпич"', cena: 240, image: "assets/какао.jpg", opis: "Густое какао на молоке, без лишней сладости", meta: "280 мл · без кофеина" },
+  { id: 5, nazvanie: "Круассан с солью", cena: 210, image: "assets/круас.jpg", opis: "Хрустящее тесто и сливочное послевкусие", meta: "утренняя выпечка" },
+  { id: 6, nazvanie: "Шу с облепихой", cena: 230, image: "assets/шу.jpg", opis: "Заварное тесто и яркий кислый крем", meta: "десерт дня" }
 ];
 
 const defaultNews = [
@@ -38,52 +46,146 @@ const defaultNews = [
   { id: 2, title: "Обновили вечерний спешл", date: "25 мая", text: "После 19:00 делаем сет: эспрессо + мини-шу по фиксированной цене. Хотели сделать просто по-соседски." }
 ];
 
-let napitki = JSON.parse(localStorage.getItem("menu-obvodny")) || defaultMenu;
-let korzina = JSON.parse(localStorage.getItem("korzina-obvodny")) || [];
-const zakazy = JSON.parse(localStorage.getItem("zakazy-obvodny")) || [];
-let novosti = JSON.parse(localStorage.getItem("news-obvodny")) || defaultNews;
+function loadNonEmptyArray(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return fallback;
+    return parsed;
+  } catch {
+    return fallback;
+  }
+}
 
-menuGrid.addEventListener("click", (e) => {
-  const btn = e.target.closest(".add-btn");
-  if (!btn) return;
-  const nazvanie = btn.dataset.name;
-  let cena = Number(btn.dataset.price);
-  korzina.push({ nazvanie, cena });
-  saveKorzina();
-  renderKorzina();
+function loadArray(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+let napitki = loadNonEmptyArray("menu-obvodny", defaultMenu);
+let korzina = loadArray("korzina-obvodny", []);
+const zakazy = loadArray("zakazy-obvodny", []);
+let novosti = loadNonEmptyArray("news-obvodny", defaultNews);
+
+const menuImagesByName = {
+  'Раф "Циолковский"': "assets/раф.jpg",
+  'Эспрессо "Смена"': "assets/Экс.jpg",
+  'Фильтр "Обводный"': "assets/америк.jpg",
+  'Какао "Кирпич"': "assets/какао.jpg",
+  "Круассан с солью": "assets/круас.jpg",
+  "Шу с облепихой": "assets/шу.jpg"
+};
+
+napitki = napitki.map((item) => {
+  const forcedImage = menuImagesByName[item.nazvanie];
+  return forcedImage ? { ...item, image: forcedImage } : item;
 });
+saveMenu();
 
-cartKnopka.addEventListener("click", toggleCart);
-closeKnopka.addEventListener("click", toggleCart);
-checkoutBtn.addEventListener("click", sdelatZakaz);
+function initApp() {
+  cartKnopka = document.getElementById("cartToggle");
+  modalka = document.getElementById("cartModal");
+  closeKnopka = document.getElementById("closeCart");
+  cartList = document.getElementById("cartList");
+  totalPrice = document.getElementById("totalPrice");
+  cartCount = document.getElementById("cartCount");
+  clearCart = document.getElementById("clearCart");
+  logoKnopka = document.getElementById("logoKnopka");
+  menuGrid = document.getElementById("menuGrid");
+  checkoutBtn = document.getElementById("checkoutBtn");
+  orderName = document.getElementById("orderName");
+  orderPhone = document.getElementById("orderPhone");
+  adminPin = document.getElementById("adminPin");
+  adminEnter = document.getElementById("adminEnter");
+  adminPanel = document.getElementById("adminPanel");
+  adminForm = document.getElementById("adminForm");
+  newsForm = document.getElementById("newsForm");
+  ordersList = document.getElementById("ordersList");
+  adminMenuCount = document.getElementById("adminMenuCount");
+  adminOrdersToday = document.getElementById("adminOrdersToday");
+  adminMenuList = document.getElementById("adminMenuList");
+  newsGrid = document.getElementById("newsGrid");
+  adminNewsList = document.getElementById("adminNewsList");
+  adminLogin = document.getElementById("adminLogin");
 
-modalka.addEventListener("click", function (e) {
-  if (e.target === modalka) {
-    toggleCart();
+  otrisovkaFrazy();
+
+  if (!menuGrid || !newsGrid) {
+    showFatal("JS упал: не нашёл блоки меню/новостей в HTML");
+    return;
+  }
+
+  menuGrid.addEventListener("click", (e) => {
+    const btn = e.target.closest(".add-btn");
+    if (!btn) return;
+    const nazvanie = btn.dataset.name;
+    let cena = Number(btn.dataset.price);
+    korzina.push({ nazvanie, cena });
+    saveKorzina();
+    renderKorzina();
+  });
+
+  if (cartKnopka) cartKnopka.addEventListener("click", toggleCart);
+  if (closeKnopka) closeKnopka.addEventListener("click", toggleCart);
+  if (checkoutBtn) checkoutBtn.addEventListener("click", sdelatZakaz);
+
+  if (modalka) {
+    modalka.addEventListener("click", function (e) {
+      if (e.target === modalka) toggleCart();
+    });
+  }
+
+  if (clearCart) {
+    clearCart.addEventListener("click", () => {
+      korzina = [];
+      saveKorzina();
+      renderKorzina();
+    });
+  }
+
+  if (logoKnopka) {
+    logoKnopka.addEventListener("click", function () {
+      alert("Я сижу у окна. Я помыл посуду. Я был счастлив здесь, и уже не буду. — И. Бродский");
+    });
+  }
+
+  if (adminEnter) adminEnter.addEventListener("click", otkrytAdmin);
+  if (adminPin) {
+    adminPin.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") otkrytAdmin();
+    });
+  }
+  if (adminForm) adminForm.addEventListener("submit", dobavitNapitok);
+  if (newsForm) newsForm.addEventListener("submit", dobavitNovost);
+
+  if (sessionStorage.getItem("admin-ok") === "1") {
+    if (adminPanel) adminPanel.classList.remove("hidden");
+    if (adminLogin) adminLogin.classList.add("hidden");
+  }
+
+  renderMenu();
+  renderNews();
+  renderKorzina();
+  renderOrders();
+  renderAdminMenu();
+  renderAdminNews();
+  updateAdminStats();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  try {
+    initApp();
+  } catch (e) {
+    showFatal(`JS упал: ${e && e.message ? e.message : String(e)}`);
   }
 });
-
-clearCart.addEventListener("click", () => {
-  korzina = [];
-  saveKorzina();
-  renderKorzina();
-});
-
-logoKnopka.addEventListener("click", function () {
-  alert("Я сижу у окна. Я помыл посуду. Я был счастлив здесь, и уже не буду. — И. Бродский");
-});
-
-adminEnter.addEventListener("click", otkrytAdmin);
-adminForm.addEventListener("submit", dobavitNapitok);
-newsForm.addEventListener("submit", dobavitNovost);
-
-renderMenu();
-renderNews();
-renderKorzina();
-renderOrders();
-renderAdminMenu();
-renderAdminNews();
-updateAdminStats();
 
 function toggleCart() {
   modalka.classList.toggle("hidden");
@@ -286,6 +388,8 @@ const otkrytAdmin = () => {
   if (adminPin.value.trim() === "2402") {
     adminPanel.classList.remove("hidden");
     adminPin.value = "";
+    sessionStorage.setItem("admin-ok", "1");
+    if (adminLogin) adminLogin.classList.add("hidden");
     return;
   }
   alert("Неверный пин");
@@ -383,5 +487,5 @@ function otrisovkaFrazy() {
 
   let randomIndex = Math.floor(Math.random() * phrases.length);
   const phraseEl = document.getElementById("dayPhrase");
-  phraseEl.textContent = phrases[randomIndex];
+  if (phraseEl) phraseEl.textContent = phrases[randomIndex];
 }
