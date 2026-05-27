@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Обводный Канал — Кофейня</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo" id="logoKnopka">Обводный Канал</div>
+    <nav class="nav">
+      <a href="#hero">Главная</a>
+      <a href="#menu">Меню</a>
+      <a href="#gallery">Галерея</a>
+      <a href="#news">Новости</a>
+      <a href="#events">События</a>
+      <a href="#reviews">Отзывы</a>
+      <a href="#about">О нас</a>
+      <a href="#contacts">Контакты</a>
+      <a href="#admin">Админ</a>
+    </nav>
+    <button class="cart-toggle" id="cartToggle" aria-label="Открыть корзину">
+      <span>Корзина</span>
+      <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </header>
+
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-overlay">
+        <h1>Кофе не для всех</h1>
+        <p>Сварено на Обводном</p>
+      </div>
+    </section>
+
+    <section class="menu section" id="menu">
+      <h2>Меню</h2>
+      <div class="menu-grid" id="menuGrid"></div>
+    </section>
+
+    <section class="gallery section" id="gallery">
+      <h2>Галерея</h2>
+      <div class="gallery-grid">
+        <img src="assets/gallery-1.svg" alt="Зал кофейни">
+        <img src="assets/gallery-2.svg" alt="Барная стойка">
+        <img src="assets/gallery-3.svg" alt="Кофе в кружке">
+        <img src="assets/gallery-4.svg" alt="Выпечка и кофе">
+      </div>
+    </section>
+
+    <section class="news section" id="news">
+      <h2>Новости</h2>
+      <div class="news-grid" id="newsGrid"></div>
+    </section>
+
+    <section class="events section" id="events">
+      <h2>События недели</h2>
+      <div class="events-grid">
+        <article class="event-card">
+          <h3>Среда — каппинг</h3>
+          <p>Пробуем две Бразилии и одну Эфиопию. Начало в 19:30.</p>
+        </article>
+        <article class="event-card">
+          <h3>Пятница — винил вечер</h3>
+          <p>Ставим пластинки и варим фильтр до закрытия.</p>
+        </article>
+        <article class="event-card">
+          <h3>Воскресенье — бранч</h3>
+          <p>Кофе + локальная выпечка со скидкой до 13:00.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="reviews section" id="reviews">
+      <h2>Отзывы</h2>
+      <div class="reviews-grid">
+        <blockquote>"Наконец место без глянца. Раф очень плотный, как надо."</blockquote>
+        <blockquote>"Зашел случайно, остался на два часа с фильтром и ноутом."</blockquote>
+        <blockquote>"Место тихое, музыка не мешает. Выпечка огонь."</blockquote>
+      </div>
+    </section>
+
+    <section class="about section" id="about">
+      <h2>О нас</h2>
+      <p class="line l1">Мы не гонимся за витринами. Мы варим кофе, который хочется пить молча, глядя в окно на канал.</p>
+      <p class="line l2">Зерно берем в Бразилии, подбираем партии руками и не любим спешку.</p>
+      <p class="line l3">Обжарка идет на Петроградке, а выпечку утром привозят ребята из соседней пекарни.</p>
+    </section>
+
+    <section class="contacts section" id="contacts">
+      <h2>Контакты</h2>
+      <div class="contacts-wrap">
+        <iframe src=src="https://yandex.ru/map-widget/v1/?ll=30.322034%2C59.908510&mode=whatshere&no-distribution=1&whatshere%5Bpoint%5D=30.320619%2C59.907997&whatshere%5Bzoom%5D=17&z=17.35" loading="lazy"></iframe>
+        <div class="contact-text">
+          <p>Телефон: +7 (812) 555-04-17</p>
+          <p>Адрес: наб. Обводного канала, 96, Санкт-Петербург</p>
+          <p>Ежедневно: 08:00-22:00</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin section" id="admin">
+      <h2>Администрирование</h2>
+      <div class="admin-login" id="adminLogin">
+        <input type="password" id="adminPin" placeholder="Пин-код">
+        <button id="adminEnter">Войти</button>
+      </div>
+      <div class="admin-panel hidden" id="adminPanel">
+        <div class="admin-stats">
+          <p>Товаров в меню: <strong id="adminMenuCount">0</strong></p>
+          <p>Заказов сегодня: <strong id="adminOrdersToday">0</strong></p>
+        </div>
+        <form class="admin-form" id="adminForm">
+          <input id="newTitle" placeholder="Название" required>
+          <input id="newPrice" type="number" placeholder="Цена" required>
+          <input id="newImage" placeholder="Ссылка на фото">
+          <button type="submit">Добавить в меню</button>
+        </form>
+        <div class="admin-list-wrap">
+          <h3>Последние заказы</h3>
+          <ul id="ordersList"></ul>
+        </div>
+        <div class="admin-list-wrap">
+          <h3>Управление меню</h3>
+          <ul id="adminMenuList"></ul>
+        </div>
+        <form class="admin-form" id="newsForm">
+          <input id="newsTitle" placeholder="Заголовок новости" required>
+          <input id="newsDate" placeholder="Дата (например 27 мая)" required>
+          <input id="newsText" placeholder="Текст новости" required>
+          <button type="submit">Добавить новость</button>
+        </form>
+        <div class="admin-list-wrap">
+          <h3>Управление новостями</h3>
+          <ul id="adminNewsList"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p id="dayPhrase"></p>
+  </footer>
+
+  <div class="cart-modal hidden" id="cartModal">
+    <div class="cart-box">
+      <div class="cart-head">
+        <h3>Твоя корзина</h3>
+        <button class="close-cart" id="closeCart">×</button>
+      </div>
+      <ul id="cartList"></ul>
+      <div class="total-row">
+        <span>Итого:</span>
+        <strong id="totalPrice">0 ₽</strong>
+      </div>
+      <div class="checkout-form">
+        <input id="orderName" placeholder="Имя">
+        <input id="orderPhone" placeholder="Телефон">
+      </div>
+      <button class="checkout-btn" id="checkoutBtn">Оформить заказ</button>
+      <button class="clear-btn" id="clearCart">Очистить</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
