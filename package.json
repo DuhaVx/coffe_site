@@ -1,10 +1,14 @@
 {
-  "name": "obvodny-canal-coffee",
-  "version": "1.0.0",
+  "name": "volna-coffee",
+  "version": "1.1.0",
   "private": true,
-  "description": "Учебный проект кофейни Обводный Канал",
+  "description": "Кофейня ВОЛНА — учебный проект с авторизацией",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node tools/free-port.js 3000 && node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.7.0"
   }
 }

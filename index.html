@@ -3,43 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Обводный Канал — Кофейня</title>
+  <title>ВОЛНА — Кофейня</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="/assets/logo-volna.svg" type="image/svg+xml">
 </head>
 <body>
   <header class="topbar">
-    <div class="logo" id="logoKnopka">Обводный Канал</div>
+    <a href="/" class="logo-wrap" id="logoKnopka">
+      <span class="logo-mark" aria-hidden="true">
+        <svg class="logo-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="40" height="40">
+          <rect width="64" height="64" rx="8" fill="#1d1c1b"/>
+          <path d="M8 42c6-4 10-4 16 0s10 4 16 0 10-4 16 0" fill="none" stroke="#c0693a" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M6 48c8-3 12-3 20 0s12 3 20 0 14-3 22 0" fill="none" stroke="#8a4f2e" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+          <path d="M32 12v8M28 16h8" stroke="#c0693a" stroke-width="2" stroke-linecap="round"/>
+          <ellipse cx="32" cy="28" rx="11" ry="9" fill="#2a2826" stroke="#c0693a" stroke-width="2"/>
+          <path d="M24 28c0-4 3.5-7 8-7s8 3 8 7" fill="#c0693a" opacity="0.35"/>
+          <path d="M21 37h22c0 6-4.5 10-11 10s-11-4-11-10z" fill="#2a2826" stroke="#c0693a" stroke-width="2"/>
+        </svg>
+      </span>
+      <span class="logo">ВОЛНА</span>
+    </a>
     <nav class="nav">
       <a href="#hero">Главная</a>
-      <a href="#menu">Меню</a>
+      <a href="/menu.html">Меню</a>
       <a href="#gallery">Галерея</a>
       <a href="#news">Новости</a>
       <a href="#events">События</a>
       <a href="#reviews">Отзывы</a>
       <a href="#about">О нас</a>
-      <a href="#contacts">Контакты</a>
-      <a href="#admin">Админ</a>
+      <a href="#admin" class="hidden" id="navAdmin">Админ</a>
     </nav>
-    <button class="cart-toggle" id="cartToggle" aria-label="Открыть корзину">
-      <span>Корзина</span>
-      <span class="cart-count" id="cartCount">0</span>
-    </button>
+    <div class="topbar-actions">
+      <button class="cart-toggle hidden" id="cartToggle" aria-label="Открыть корзину">
+        <span>Корзина</span>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <a class="account-toggle" id="headerAccount" href="/login.html">Вход</a>
+    </div>
   </header>
 
   <main>
     <section class="hero" id="hero">
       <div class="hero-overlay">
-        <h1>Кофе не для всех</h1>
-        <p>Сварено на Обводном</p>
+        <h1>На волне даже тишина пахнет зерном</h1>
+        <p>Кофейня ВОЛНА</p>
       </div>
-    </section>
-
-    <section class="menu section" id="menu">
-      <h2>Меню</h2>
-      <div class="menu-grid" id="menuGrid"></div>
     </section>
 
     <section class="gallery section" id="gallery">
@@ -91,25 +102,9 @@
       <p class="line l3">Обжарка идет на Петроградке, а выпечку утром привозят ребята из соседней пекарни.</p>
     </section>
 
-    <section class="contacts section" id="contacts">
-      <h2>Контакты</h2>
-      <div class="contacts-wrap">
-        <iframe src="https://yandex.ru/map-widget/v1/?ll=30.322034%2C59.908510&mode=whatshere&no-distribution=1&whatshere%5Bpoint%5D=30.320619%2C59.907997&whatshere%5Bzoom%5D=17&z=17.35" loading="lazy"></iframe>
-        <div class="contact-text">
-          <p>Телефон: +7 (812) 555-04-17</p>
-          <p>Адрес: наб. Обводного канала, 96, Санкт-Петербург</p>
-          <p>Ежедневно: 08:00-22:00</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="admin section" id="admin">
+    <section class="admin section hidden" id="admin">
       <h2>Администрирование</h2>
-      <div class="admin-login" id="adminLogin">
-        <input type="password" id="adminPin" placeholder="Пин-код">
-        <button id="adminEnter">Войти</button>
-      </div>
-      <div class="admin-panel hidden" id="adminPanel">
+      <div class="admin-panel" id="adminPanel">
         <div class="admin-stats">
           <p>Товаров в меню: <strong id="adminMenuCount">0</strong></p>
           <p>Заказов сегодня: <strong id="adminOrdersToday">0</strong></p>
@@ -142,8 +137,41 @@
     </section>
   </main>
 
-  <footer class="footer">
-    <p id="dayPhrase"></p>
+  <footer class="site-footer" id="contacts">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <svg class="footer-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+          <rect width="64" height="64" rx="8" fill="#1d1c1b"/>
+          <path d="M8 42c6-4 10-4 16 0s10 4 16 0 10-4 16 0" fill="none" stroke="#c0693a" stroke-width="2.5" stroke-linecap="round"/>
+          <ellipse cx="32" cy="28" rx="11" ry="9" fill="#2a2826" stroke="#c0693a" stroke-width="2"/>
+          <path d="M21 37h22c0 6-4.5 10-11 10s-11-4-11-10z" fill="#2a2826" stroke="#c0693a" stroke-width="2"/>
+        </svg>
+        <div>
+          <strong class="footer-title">ВОЛНА</strong>
+          <p class="footer-tagline" id="dayPhrase"></p>
+        </div>
+      </div>
+      <div class="footer-grid">
+        <div class="footer-block">
+          <h3>Контакты</h3>
+          <p>Телефон: <a href="tel:+78125550417">+7 (812) 555-04-17</a></p>
+          <p>Адрес: наб. Обводного канала, 96, Санкт-Петербург</p>
+        </div>
+        <div class="footer-block">
+          <h3>Режим работы</h3>
+          <p>Ежедневно: 9:00 — 20:00</p>
+        </div>
+        <div class="footer-block footer-map-block">
+          <h3>На карте</h3>
+          <iframe
+            class="footer-map"
+            title="Кофейня ВОЛНА на карте"
+            src="https://yandex.ru/map-widget/v1/?ll=30.322034%2C59.908510&mode=whatshere&no-distribution=1&whatshere%5Bpoint%5D=30.320619%2C59.907997&whatshere%5Bzoom%5D=17&z=17.35"
+            loading="lazy"></iframe>
+        </div>
+      </div>
+      <p class="footer-copy">© ВОЛНА — кофейня на Обводном</p>
+    </div>
   </footer>
 
   <div class="cart-modal hidden" id="cartModal">
@@ -166,6 +194,9 @@
     </div>
   </div>
 
+  <script src="auth.js"></script>
+  <script src="menu-store.js"></script>
+  <script src="cart.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

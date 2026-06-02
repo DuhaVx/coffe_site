@@ -29,17 +29,8 @@ window.addEventListener("unhandledrejection", (e) => {
 
 let cartKnopka, modalka, closeKnopka, cartList, totalPrice, cartCount, clearCart;
 let logoKnopka, menuGrid, checkoutBtn, orderName, orderPhone;
-let adminPin, adminEnter, adminPanel, adminForm, newsForm, ordersList;
-let adminMenuCount, adminOrdersToday, adminMenuList, newsGrid, adminNewsList, adminLogin;
-
-const defaultMenu = [
-  { id: 1, nazvanie: 'Раф "Циолковский"', cena: 320, image: "assets/раф.jpg", opis: "Сливочный раф с мягкой ванильной нотой", meta: "300 мл · молочный" },
-  { id: 2, nazvanie: 'Эспрессо "Смена"', cena: 180, image: "assets/Экс.jpg", opis: "Плотный шот, горький шоколад и сухой орех", meta: "30 мл · классика" },
-  { id: 3, nazvanie: 'Фильтр "Обводный"', cena: 260, image: "assets/америк.jpg", opis: "Спокойная чашка для длинного разговора", meta: "250 мл · зерно дня" },
-  { id: 4, nazvanie: 'Какао "Кирпич"', cena: 240, image: "assets/какао.jpg", opis: "Густое какао на молоке, без лишней сладости", meta: "280 мл · без кофеина" },
-  { id: 5, nazvanie: "Круассан с солью", cena: 210, image: "assets/круас.jpg", opis: "Хрустящее тесто и сливочное послевкусие", meta: "утренняя выпечка" },
-  { id: 6, nazvanie: "Шу с облепихой", cena: 230, image: "assets/шу.jpg", opis: "Заварное тесто и яркий кислый крем", meta: "десерт дня" }
-];
+let adminSection, adminPanel, adminForm, newsForm, ordersList;
+let adminMenuCount, adminOrdersToday, adminMenuList, newsGrid, adminNewsList;
 
 const defaultNews = [
   { id: 1, title: "Новая партия из Минас-Жерайс", date: "27 мая", text: "Привезли свежую Бразилию под фильтр. Вкус: какао, орех, сухофрукты. Будет в меню до конца недели." },
@@ -69,25 +60,9 @@ function loadArray(key, fallback) {
   }
 }
 
-let napitki = loadNonEmptyArray("menu-obvodny", defaultMenu);
-let korzina = loadArray("korzina-obvodny", []);
+let napitki = loadMenuItems();
 const zakazy = loadArray("zakazy-obvodny", []);
 let novosti = loadNonEmptyArray("news-obvodny", defaultNews);
-
-const menuImagesByName = {
-  'Раф "Циолковский"': "assets/раф.jpg",
-  'Эспрессо "Смена"': "assets/Экс.jpg",
-  'Фильтр "Обводный"': "assets/америк.jpg",
-  'Какао "Кирпич"': "assets/какао.jpg",
-  "Круассан с солью": "assets/круас.jpg",
-  "Шу с облепихой": "assets/шу.jpg"
-};
-
-napitki = napitki.map((item) => {
-  const forcedImage = menuImagesByName[item.nazvanie];
-  return forcedImage ? { ...item, image: forcedImage } : item;
-});
-saveMenu();
 
 function initApp() {
   cartKnopka = document.getElementById("cartToggle");
@@ -102,8 +77,7 @@ function initApp() {
   checkoutBtn = document.getElementById("checkoutBtn");
   orderName = document.getElementById("orderName");
   orderPhone = document.getElementById("orderPhone");
-  adminPin = document.getElementById("adminPin");
-  adminEnter = document.getElementById("adminEnter");
+  adminSection = document.getElementById("admin");
   adminPanel = document.getElementById("adminPanel");
   adminForm = document.getElementById("adminForm");
   newsForm = document.getElementById("newsForm");
@@ -113,66 +87,32 @@ function initApp() {
   adminMenuList = document.getElementById("adminMenuList");
   newsGrid = document.getElementById("newsGrid");
   adminNewsList = document.getElementById("adminNewsList");
-  adminLogin = document.getElementById("adminLogin");
 
   otrisovkaFrazy();
+  initSiteHeader({ activePage: "home" });
+  setupAdminAccess();
 
-  if (!menuGrid || !newsGrid) {
-    showFatal("JS упал: не нашёл блоки меню/новостей в HTML");
+  if (!newsGrid) {
+    showFatal("JS упал: не нашёл блок новостей в HTML");
     return;
   }
 
-  menuGrid.addEventListener("click", (e) => {
-    const btn = e.target.closest(".add-btn");
-    if (!btn) return;
-    const nazvanie = btn.dataset.name;
-    let cena = Number(btn.dataset.price);
-    korzina.push({ nazvanie, cena });
-    saveKorzina();
-    renderKorzina();
-  });
-
-  if (cartKnopka) cartKnopka.addEventListener("click", toggleCart);
-  if (closeKnopka) closeKnopka.addEventListener("click", toggleCart);
-  if (checkoutBtn) checkoutBtn.addEventListener("click", sdelatZakaz);
-
-  if (modalka) {
-    modalka.addEventListener("click", function (e) {
-      if (e.target === modalka) toggleCart();
+  if (menuGrid) {
+    menuGrid.addEventListener("click", (e) => {
+      const btn = e.target.closest(".add-btn");
+      if (!btn) return;
+      addToKorzina(btn.dataset.name, btn.dataset.price);
     });
   }
 
-  if (clearCart) {
-    clearCart.addEventListener("click", () => {
-      korzina = [];
-      saveKorzina();
-      renderKorzina();
-    });
-  }
+  initCartUI();
 
-  if (logoKnopka) {
-    logoKnopka.addEventListener("click", function () {
-      alert("Я сижу у окна. Я помыл посуду. Я был счастлив здесь, и уже не буду. — И. Бродский");
-    });
-  }
 
-  if (adminEnter) adminEnter.addEventListener("click", otkrytAdmin);
-  if (adminPin) {
-    adminPin.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") otkrytAdmin();
-    });
-  }
   if (adminForm) adminForm.addEventListener("submit", dobavitNapitok);
   if (newsForm) newsForm.addEventListener("submit", dobavitNovost);
 
-  if (sessionStorage.getItem("admin-ok") === "1") {
-    if (adminPanel) adminPanel.classList.remove("hidden");
-    if (adminLogin) adminLogin.classList.add("hidden");
-  }
-
-  renderMenu();
+  if (menuGrid) renderMenu();
   renderNews();
-  renderKorzina();
   renderOrders();
   renderAdminMenu();
   renderAdminNews();
@@ -187,16 +127,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-function toggleCart() {
-  modalka.classList.toggle("hidden");
-}
-
-const saveKorzina = () => {
-  localStorage.setItem("korzina-obvodny", JSON.stringify(korzina));
-};
-
 function saveMenu() {
-  localStorage.setItem("menu-obvodny", JSON.stringify(napitki));
+  saveMenuItems(napitki);
 }
 
 function saveOrders() {
@@ -208,6 +140,7 @@ function saveNews() {
 }
 
 function renderMenu() {
+  if (!menuGrid) return;
   menuGrid.innerHTML = "";
   napitki.forEach((item) => {
     const card = document.createElement("article");
@@ -307,69 +240,6 @@ function renderAdminMenu() {
   });
 }
 
-function renderKorzina() {
-  cartList.innerHTML = "";
-  let summa = 0;
-
-  if (korzina.length === 0) {
-    cartList.innerHTML = "<li>Пока пусто, но это поправимо.</li>";
-  } else {
-    korzina.forEach((napitok, idx) => {
-      summa += napitok.cena;
-      const li = document.createElement("li");
-      const txt = document.createElement("span");
-      const deleteBtn = document.createElement("button");
-      txt.textContent = napitok.nazvanie + " — " + napitok.cena + " ₽";
-      deleteBtn.textContent = "убрать";
-      deleteBtn.className = "mini-del";
-      deleteBtn.addEventListener("click", () => {
-        korzina.splice(idx, 1);
-        saveKorzina();
-        renderKorzina();
-      });
-      li.append(txt, deleteBtn);
-      cartList.appendChild(li);
-    });
-  }
-
-  totalPrice.textContent = `${summa} ₽`;
-  cartCount.textContent = korzina.length;
-}
-
-function sdelatZakaz() {
-  if (!korzina.length) {
-    alert("Корзина пустая");
-    return;
-  }
-  const fio = orderName.value.trim();
-  const tel = orderPhone.value.trim();
-  if (!fio || !tel) {
-    alert("Заполни имя и телефон");
-    return;
-  }
-  const itog = korzina.reduce((acc, item) => acc + item.cena, 0);
-  let order = {
-    id: Date.now(),
-    data: new Date().toLocaleString("ru-RU"),
-    client: fio,
-    phone: tel,
-    items: [...korzina],
-    total: itog,
-    status: "new"
-  };
-  zakazy.unshift(order);
-  saveOrders();
-  korzina = [];
-  saveKorzina();
-  orderName.value = "";
-  orderPhone.value = "";
-  renderKorzina();
-  renderOrders();
-  updateAdminStats();
-  toggleCart();
-  alert(`Заказ принят, ${fio}`);
-}
-
 function renderOrders() {
   ordersList.innerHTML = "";
   const slice = zakazy.slice(0, 7);
@@ -384,16 +254,20 @@ function renderOrders() {
   }
 }
 
-const otkrytAdmin = () => {
-  if (adminPin.value.trim() === "2402") {
-    adminPanel.classList.remove("hidden");
-    adminPin.value = "";
-    sessionStorage.setItem("admin-ok", "1");
-    if (adminLogin) adminLogin.classList.add("hidden");
-    return;
-  }
-  alert("Неверный пин");
-};
+function setupAdminAccess() {
+  if (typeof fetchMe !== "function") return;
+  fetchMe()
+    .then(({ user }) => {
+      if (user && user.isAdmin && adminSection) {
+        adminSection.classList.remove("hidden");
+      } else if (adminSection) {
+        adminSection.classList.add("hidden");
+      }
+    })
+    .catch(() => {
+      if (adminSection) adminSection.classList.add("hidden");
+    });
+}
 
 function dobavitNapitok(e) {
   e.preventDefault();
@@ -403,9 +277,18 @@ function dobavitNapitok(e) {
   if (!title || !price) {
     return;
   }
-  napitki.push({ id: Date.now(), nazvanie: title, cena: price, image, opis: "Новая позиция от бариста", meta: "ручное обновление" });
-  saveMenu();
-  renderMenu();
+  napitki.push({
+    id: Date.now(),
+    nazvanie: title,
+    cena: price,
+    image,
+    opis: "Новая позиция от бариста",
+    meta: "порция",
+    isNew: false
+  });
+  saveMenuItems(napitki);
+  napitki = loadMenuItems();
+  if (menuGrid) renderMenu();
   renderAdminMenu();
   updateAdminStats();
   adminForm.reset();
@@ -444,21 +327,40 @@ function pravkaNovost(id) {
 function pravkaNapitka(id) {
   const idx = napitki.findIndex((x) => x.id === id);
   if (idx === -1) return;
-  const newTitle = prompt("Новое название", napitki[idx].nazvanie);
-  if (!newTitle) return;
-  const newPrice = Number(prompt("Новая цена", napitki[idx].cena));
-  if (!newPrice) return;
-  napitki[idx].nazvanie = newTitle.trim();
-  napitki[idx].cena = newPrice;
-  saveMenu();
-  renderMenu();
+  const item = napitki[idx];
+  const newTitle = prompt("Новое название", item.nazvanie);
+  if (newTitle === null) return;
+  const newPriceRaw = prompt("Новая цена", item.cena);
+  if (newPriceRaw === null) return;
+  const newPrice = Number(newPriceRaw);
+  if (!newTitle.trim() || Number.isNaN(newPrice) || newPrice < 0) {
+    alert("Укажите название и корректную цену");
+    return;
+  }
+  const newOpis = prompt("Описание", item.opis || "");
+  if (newOpis === null) return;
+  const newMeta = prompt("Порция / объём (например 300 мл)", item.meta || "");
+  if (newMeta === null) return;
+
+  napitki[idx] = {
+    ...item,
+    nazvanie: newTitle.trim(),
+    cena: newPrice,
+    opis: newOpis.trim() || item.opis,
+    meta: newMeta.trim() || item.meta
+  };
+  saveMenuItems(napitki);
+  napitki = loadMenuItems();
+  if (menuGrid) renderMenu();
   renderAdminMenu();
+  updateAdminStats();
 }
 
 const udalitNapitok = (id) => {
   napitki = napitki.filter((x) => x.id !== id);
-  saveMenu();
-  renderMenu();
+  saveMenuItems(napitki);
+  napitki = loadMenuItems();
+  if (menuGrid) renderMenu();
   renderAdminMenu();
   updateAdminStats();
 };
@@ -481,7 +383,7 @@ function otrisovkaFrazy() {
   const phrases = [
     "Кофе — это язык, на котором говорит утро.",
     "Сначала глоток, потом разговор.",
-    "На Обводном даже тишина пахнет зерном.",
+    "На волне даже тишина пахнет зерном.",
     "Горько, крепко, по-питерски."
   ];
 

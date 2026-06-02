@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ВОЛНА — Меню</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="/assets/logo-volna.svg" type="image/svg+xml">
+</head>
+<body class="menu-page-body">
+  <header class="topbar">
+    <a href="/" class="logo-wrap" id="logoKnopka">
+      <span class="logo-mark" aria-hidden="true">
+        <svg class="logo-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="40" height="40">
+          <rect width="64" height="64" rx="8" fill="#1d1c1b"/>
+          <path d="M8 42c6-4 10-4 16 0s10 4 16 0 10-4 16 0" fill="none" stroke="#c0693a" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M6 48c8-3 12-3 20 0s12 3 20 0 14-3 22 0" fill="none" stroke="#8a4f2e" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+          <path d="M32 12v8M28 16h8" stroke="#c0693a" stroke-width="2" stroke-linecap="round"/>
+          <ellipse cx="32" cy="28" rx="11" ry="9" fill="#2a2826" stroke="#c0693a" stroke-width="2"/>
+          <path d="M24 28c0-4 3.5-7 8-7s8 3 8 7" fill="#c0693a" opacity="0.35"/>
+          <path d="M21 37h22c0 6-4.5 10-11 10s-11-4-11-10z" fill="#2a2826" stroke="#c0693a" stroke-width="2"/>
+        </svg>
+      </span>
+      <span class="logo">ВОЛНА</span>
+    </a>
+    <nav class="nav">
+      <a href="/">Главная</a>
+      <a href="/menu.html" class="nav-active">Меню</a>
+      <a href="/#gallery">Галерея</a>
+      <a href="/#about">О нас</a>
+      <a href="/#admin" class="hidden" id="navAdmin">Админ</a>
+    </nav>
+    <div class="topbar-actions">
+      <button class="cart-toggle hidden" id="cartToggle" aria-label="Открыть корзину">
+        <span>Корзина</span>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <a class="account-toggle" id="headerAccount" href="/login.html">Вход</a>
+    </div>
+  </header>
+
+  <main class="menu-page-main">
+    <h1 class="menu-page-title">Меню</h1>
+    <div class="menu-catalog" id="menuCatalog"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p class="footer-copy">© ВОЛНА — кофейня на Обводном · <a href="/">На главную</a></p>
+    </div>
+  </footer>
+
+  <div class="cart-modal hidden" id="cartModal">
+    <div class="cart-box">
+      <div class="cart-head">
+        <h3>Твоя корзина</h3>
+        <button class="close-cart" id="closeCart">×</button>
+      </div>
+      <ul id="cartList"></ul>
+      <div class="total-row">
+        <span>Итого:</span>
+        <strong id="totalPrice">0 ₽</strong>
+      </div>
+      <div class="checkout-form">
+        <input id="orderName" placeholder="Имя">
+        <input id="orderPhone" placeholder="Телефон">
+      </div>
+      <button class="checkout-btn" id="checkoutBtn">Оформить заказ</button>
+      <button class="clear-btn" id="clearCart">Очистить</button>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="menu-store.js"></script>
+  <script src="cart.js"></script>
+  <script src="menu-page.js"></script>
+</body>
+</html>
