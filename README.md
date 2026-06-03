@@ -10,8 +10,8 @@
 
 - HTML
 - CSS
-- JavaScript (без фреймворков)
-- Node.js (локальный сервер)
+- JavaScript
+- Node.js
 - PostgreSQL
 
 ## Как запустить фронтенд
