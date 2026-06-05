@@ -38,7 +38,7 @@ psql -U your_user -d your_db -f src/sql/demo-data.sql
 psql -U your_user -d your_db -f src/sql/queries.sql
 ```
 
-## Админ по умолчанию
+## Данные для аккаунта администратора
 
 - логин: `admin`
 - пароль: `admin`
