@@ -9,7 +9,7 @@ npm install
 npm start
 ```
 
-Сайт: [http://localhost:3000](http://localhost:3000)
+Сайт67: [http://localhost:3000](http://localhost:3000)
 
 ## Структура проекта
 
