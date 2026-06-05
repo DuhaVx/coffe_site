@@ -1,11 +1,11 @@
 {
   "name": "volna-coffee",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Кофейня ВОЛНА — учебный проект с авторизацией",
-  "main": "server.js",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node tools/free-port.js 3000 && node server.js"
+    "start": "node src/tools/free-port.js 3000 && node src/server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

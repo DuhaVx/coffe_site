@@ -1,46 +1,44 @@
-# Волна
+# ВОЛНА
 
-Учебный проект для дипломной работы: сайт петербургской кофейни.
+Учебный проект: сайт кофейни с корзиной, авторизацией (SQLite) и отдельной SQL-частью на PostgreSQL.
 
-## Идея
-
-Кофейня находится рядом с Обводным каналом, в старом фонде. Визуально проект собран в темной палитре с ржаво-оранжевым акцентом: кирпич, металл, спокойный свет.
-
-## Стек
-
-- HTML
-- CSS
-- JavaScript
-- Node.js
-- PostgreSQL
-
-## Как запустить фронтенд
-
-Запуск через локальный сервер на JavaScript (Node.js):
+## Запуск
 
 ```bash
-node server.js
-```
-
-После запуска:
-
-- [http://localhost:3000](http://localhost:3000)
-
-Альтернатива через npm-скрипт:
-
-```bash
+npm install
 npm start
 ```
 
-## Как запустить SQL-часть
+Сайт: [http://localhost:3000](http://localhost:3000)
 
-1. Создать пустую базу в PostgreSQL
-2. Выполнить схему и начальные данные
-3. При необходимости добавить расширенные демо-данные
-4. Выполнить аналитические запросы
+## Структура проекта
+
+```
+coffe_site/
+├── package.json
+├── package-lock.json
+├── .gitignore
+├── README.md
+└── src/
+    ├── server.js
+    ├── index.html, login.html, register.html, profile.html, menu.html
+    ├── style.css
+    ├── auth.js, script.js, cart.js, menu-store.js, menu-page.js, profile.js
+    ├── assets/
+    ├── data/
+    ├── sql/
+    └── tools/
+```
+
+## SQL-часть (PostgreSQL)
 
 ```bash
-psql -U your_user -d your_db -f database.sql
-psql -U your_user -d your_db -f demo-data.sql
-psql -U your_user -d your_db -f queries.sql
+psql -U your_user -d your_db -f src/sql/database.sql
+psql -U your_user -d your_db -f src/sql/demo-data.sql
+psql -U your_user -d your_db -f src/sql/queries.sql
 ```
+
+## Админ по умолчанию
+
+- логин: `admin`
+- пароль: `admin`
