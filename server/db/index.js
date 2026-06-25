@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { DatabaseSync } = require("node:sqlite");
+const { createClient } = require("@libsql/client");
 
 const storageDir = path.join(__dirname, "..", "storage");
 const dbPath = process.env.DB_PATH || path.join(storageDir, "volna.db");
@@ -20,17 +20,74 @@ const DEFAULT_NEWS = [
   { title: "Обновили вечерний спешл", dateLabel: "25 мая", body: "После 19:00 делаем сет: эспрессо + мини-шу по фиксированной цене. Хотели сделать просто по-соседски." }
 ];
 
-function openDatabase() {
-  fs.mkdirSync(storageDir, { recursive: true });
-  const db = new DatabaseSync(dbPath);
-  db.exec("PRAGMA journal_mode = WAL");
-  db.exec("PRAGMA foreign_keys = ON");
-  db.exec(fs.readFileSync(schemaPath, "utf8"));
-  return db;
+function createDbAdapter(client) {
+  return {
+    client,
+    async exec(sql) {
+      await client.executeMultiple(sql);
+    },
+    prepare(sql) {
+      return {
+        async get(...args) {
+          const result = await client.execute({ sql, args });
+          return result.rows[0];
+        },
+        async all(...args) {
+          const result = await client.execute({ sql, args });
+          return result.rows;
+        },
+        async run(...args) {
+          const result = await client.execute({ sql, args });
+          return {
+            lastInsertRowid: Number(result.lastInsertRowid ?? 0),
+            changes: Number(result.rowsAffected ?? 0)
+          };
+        }
+      };
+    }
+  };
 }
 
-function seedMenu(db) {
-  const count = db.prepare("SELECT COUNT(*) AS n FROM menu_items").get().n;
+function readSchema(isRemote) {
+  let schema = fs.readFileSync(schemaPath, "utf8");
+  if (isRemote) {
+    schema = schema.replace(/PRAGMA journal_mode = WAL;\s*/gi, "");
+  } else {
+    schema = `PRAGMA journal_mode = WAL;\n${schema}`;
+  }
+  return schema;
+}
+
+async function openDatabase() {
+  const tursoUrl = process.env.TURSO_DATABASE_URL;
+  const tursoToken = process.env.TURSO_AUTH_TOKEN;
+
+  let client;
+  let dbLabel;
+  let mode;
+
+  if (tursoUrl) {
+    if (!tursoToken) {
+      throw new Error("Задайте TURSO_AUTH_TOKEN вместе с TURSO_DATABASE_URL");
+    }
+    client = createClient({ url: tursoUrl, authToken: tursoToken });
+    dbLabel = tursoUrl;
+    mode = "turso";
+  } else {
+    fs.mkdirSync(storageDir, { recursive: true });
+    const fileUrl = `file:${dbPath.replace(/\\/g, "/")}`;
+    client = createClient({ url: fileUrl });
+    dbLabel = dbPath;
+    mode = "local";
+  }
+
+  const db = createDbAdapter(client);
+  await db.exec(readSchema(Boolean(tursoUrl)));
+  return { db, dbLabel, mode };
+}
+
+async function seedMenu(db) {
+  const count = Number((await db.prepare("SELECT COUNT(*) AS n FROM menu_items").get()).n);
   if (count > 0) return;
 
   const insert = db.prepare(`
@@ -38,13 +95,14 @@ function seedMenu(db) {
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
-  DEFAULT_MENU.forEach((item, index) => {
-    insert.run(item.title, item.description, item.meta, item.price, item.image, item.isNew ? 1 : 0, index);
-  });
+  for (let index = 0; index < DEFAULT_MENU.length; index += 1) {
+    const item = DEFAULT_MENU[index];
+    await insert.run(item.title, item.description, item.meta, item.price, item.image, item.isNew ? 1 : 0, index);
+  }
 }
 
-function seedNews(db) {
-  const count = db.prepare("SELECT COUNT(*) AS n FROM news").get().n;
+async function seedNews(db) {
+  const count = Number((await db.prepare("SELECT COUNT(*) AS n FROM news").get()).n);
   if (count > 0) return;
 
   const insert = db.prepare(`
@@ -53,18 +111,16 @@ function seedNews(db) {
   `);
 
   for (const item of DEFAULT_NEWS) {
-    insert.run(item.title, item.dateLabel, item.body);
+    await insert.run(item.title, item.dateLabel, item.body);
   }
 }
 
-function seedAdmin(db, bcrypt) {
-  const admin = db.prepare("SELECT id FROM users WHERE login = ?").get("admin");
+async function seedAdmin(db, bcrypt) {
+  const admin = await db.prepare("SELECT id FROM users WHERE login = ?").get("admin");
   if (admin) return;
 
   const hash = bcrypt.hashSync("admin", 10);
-  db.prepare(
-    "INSERT INTO users (login, password_hash, is_admin) VALUES (?, ?, 1)"
-  ).run("admin", hash);
+  await db.prepare("INSERT INTO users (login, password_hash, is_admin) VALUES (?, ?, 1)").run("admin", hash);
   console.log("Создан админ: логин admin, пароль admin");
 }
 

@@ -13,10 +13,10 @@ const { menuRowToClient, newsRowToClient, userRowToClient } = require("./db");
 const SESSION_DAYS = 7;
 const sessions = new Map();
 
-function createApi({ db, bcrypt }) {
-  function loadUserById(id) {
+function createApi({ db, bcrypt, dbMode = "local" }) {
+  async function loadUserById(id) {
     return userRowToClient(
-      db
+      await db
         .prepare(
           `SELECT id, login, is_admin, first_name, last_name, middle_name, phone, email
            FROM users WHERE id = ?`
@@ -25,12 +25,12 @@ function createApi({ db, bcrypt }) {
     );
   }
 
-  function createSession(userId) {
+  async function createSession(userId) {
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date();
     expires.setDate(expires.getDate() + SESSION_DAYS);
     const expiresIso = expires.toISOString();
-    db.prepare("INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)").run(
+    await db.prepare("INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)").run(
       token,
       userId,
       expiresIso
@@ -39,19 +39,19 @@ function createApi({ db, bcrypt }) {
     return { token, expires };
   }
 
-  function getSessionUser(token) {
+  async function getSessionUser(token) {
     if (!token) return null;
 
     let cached = sessions.get(token);
     if (!cached) {
-      const row = db.prepare("SELECT user_id, expires_at FROM sessions WHERE token = ?").get(token);
+      const row = await db.prepare("SELECT user_id, expires_at FROM sessions WHERE token = ?").get(token);
       if (!row) return null;
       cached = { userId: row.user_id, expires: new Date(row.expires_at).getTime() };
       sessions.set(token, cached);
     }
 
     if (Date.now() > cached.expires) {
-      db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+      await db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
       sessions.delete(token);
       return null;
     }
@@ -59,15 +59,15 @@ function createApi({ db, bcrypt }) {
     return loadUserById(cached.userId);
   }
 
-  function destroySession(token) {
+  async function destroySession(token) {
     if (!token) return;
-    db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+    await db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
     sessions.delete(token);
   }
 
-  function requireAuth(req, res) {
+  async function requireAuth(req, res) {
     const cookies = parseCookies(req.headers.cookie);
-    const user = getSessionUser(cookies.session);
+    const user = await getSessionUser(cookies.session);
     if (!user) {
       sendJson(res, 401, { error: "Нужно войти в аккаунт" });
       return null;
@@ -75,8 +75,8 @@ function createApi({ db, bcrypt }) {
     return user;
   }
 
-  function requireAdmin(req, res) {
-    const user = requireAuth(req, res);
+  async function requireAdmin(req, res) {
+    const user = await requireAuth(req, res);
     if (!user) return null;
     if (!user.isAdmin) {
       sendJson(res, 403, { error: "Доступ только для администратора" });
@@ -102,7 +102,7 @@ function createApi({ db, bcrypt }) {
     }
   }
 
-  function updateUserProfile(sessionUser, body) {
+  async function updateUserProfile(sessionUser, body) {
     const field = String(body.field || "");
     const value = String(body.value ?? "").trim();
     const allowed = {
@@ -123,28 +123,28 @@ function createApi({ db, bcrypt }) {
       if (value.length < 3) {
         return { status: 400, data: { error: "Логин: минимум 3 символа" } };
       }
-      const taken = db.prepare("SELECT id FROM users WHERE login = ? AND id != ?").get(value, sessionUser.id);
+      const taken = await db.prepare("SELECT id FROM users WHERE login = ? AND id != ?").get(value, sessionUser.id);
       if (taken) {
         return { status: 409, data: { error: "Такой логин уже занят" } };
       }
-      db.prepare("UPDATE users SET login = ? WHERE id = ?").run(value, sessionUser.id);
+      await db.prepare("UPDATE users SET login = ? WHERE id = ?").run(value, sessionUser.id);
     } else if (field === "password") {
       if (value.length < 4) {
         return { status: 400, data: { error: "Пароль: минимум 4 символа" } };
       }
       const hash = bcrypt.hashSync(value, 10);
-      db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hash, sessionUser.id);
+      await db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hash, sessionUser.id);
     } else if (field === "email" && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       return { status: 400, data: { error: "Некорректный email" } };
     } else {
-      db.prepare(`UPDATE users SET ${allowed[field]} = ? WHERE id = ?`).run(value, sessionUser.id);
+      await db.prepare(`UPDATE users SET ${allowed[field]} = ? WHERE id = ?`).run(value, sessionUser.id);
     }
 
-    return { status: 200, data: { user: loadUserById(sessionUser.id) } };
+    return { status: 200, data: { user: await loadUserById(sessionUser.id) } };
   }
 
-  function listMenu() {
-    const rows = db
+  async function listMenu() {
+    const rows = await db
       .prepare(
         `SELECT id, title, description, meta, price, image, is_new
          FROM menu_items
@@ -155,8 +155,8 @@ function createApi({ db, bcrypt }) {
     return rows.map(menuRowToClient);
   }
 
-  function listNews() {
-    const rows = db
+  async function listNews() {
+    const rows = await db
       .prepare(
         `SELECT id, title, date_label, body
          FROM news
@@ -199,25 +199,25 @@ function createApi({ db, bcrypt }) {
     const token = cookies.session;
 
     if (pathname === "/api/health" && req.method === "GET") {
-      sendJson(res, 200, { ok: true, apiVersion: 3 });
+      sendJson(res, 200, { ok: true, apiVersion: 3, db: dbMode });
       return;
     }
 
     if (pathname === "/api/me" && req.method === "GET") {
-      const user = getSessionUser(token);
+      const user = await getSessionUser(token);
       sendJson(res, 200, { user: user || null });
       return;
     }
 
     if (pathname === "/api/me/update" && req.method === "POST") {
-      const sessionUser = requireAuth(req, res);
+      const sessionUser = await requireAuth(req, res);
       if (!sessionUser) return;
 
       const body = await readJsonBody(req, res);
       if (body === null) return;
 
       try {
-        const result = updateUserProfile(sessionUser, body);
+        const result = await updateUserProfile(sessionUser, body);
         sendJson(res, result.status, result.data);
       } catch (e) {
         console.error("profile update:", e);
@@ -241,17 +241,17 @@ function createApi({ db, bcrypt }) {
         return;
       }
 
-      const exists = db.prepare("SELECT id FROM users WHERE login = ?").get(login);
+      const exists = await db.prepare("SELECT id FROM users WHERE login = ?").get(login);
       if (exists) {
         sendJson(res, 409, { error: "Такой логин уже занят" });
         return;
       }
 
       const hash = bcrypt.hashSync(password, 10);
-      const info = db
+      const info = await db
         .prepare("INSERT INTO users (login, password_hash, is_admin) VALUES (?, ?, 0)")
         .run(login, hash);
-      const session = createSession(info.lastInsertRowid);
+      const session = await createSession(info.lastInsertRowid);
       setSessionCookie(res, session.token, session.expires);
       sendJson(res, 201, { ok: true, login });
       return;
@@ -263,38 +263,38 @@ function createApi({ db, bcrypt }) {
 
       const login = String(body.login || "").trim();
       const password = String(body.password || "");
-      const user = db.prepare("SELECT id, password_hash, is_admin FROM users WHERE login = ?").get(login);
+      const user = await db.prepare("SELECT id, password_hash, is_admin FROM users WHERE login = ?").get(login);
 
       if (!user || !bcrypt.compareSync(password, user.password_hash)) {
         sendJson(res, 401, { error: "Неверный логин или пароль" });
         return;
       }
 
-      const session = createSession(user.id);
+      const session = await createSession(user.id);
       setSessionCookie(res, session.token, session.expires);
       sendJson(res, 200, { ok: true, isAdmin: Boolean(user.is_admin) });
       return;
     }
 
     if (pathname === "/api/logout" && req.method === "POST") {
-      destroySession(token);
+      await destroySession(token);
       clearSessionCookie(res);
       sendJson(res, 200, { ok: true });
       return;
     }
 
     if (pathname === "/api/menu" && req.method === "GET") {
-      sendJson(res, 200, { items: listMenu() });
+      sendJson(res, 200, { items: await listMenu() });
       return;
     }
 
     if (pathname === "/api/news" && req.method === "GET") {
-      sendJson(res, 200, { items: listNews() });
+      sendJson(res, 200, { items: await listNews() });
       return;
     }
 
     if (pathname === "/api/orders" && req.method === "POST") {
-      const sessionUser = requireAuth(req, res);
+      const sessionUser = await requireAuth(req, res);
       if (!sessionUser) return;
 
       const body = await readJsonBody(req, res);
@@ -329,7 +329,7 @@ function createApi({ db, bcrypt }) {
       }
 
       const total = normalized.reduce((sum, item) => sum + item.price * item.qty, 0);
-      const orderInfo = db
+      const orderInfo = await db
         .prepare(
           "INSERT INTO orders (user_id, client_name, client_phone, total, status) VALUES (?, ?, ?, ?, 'new')"
         )
@@ -339,7 +339,7 @@ function createApi({ db, bcrypt }) {
         "INSERT INTO order_items (order_id, product_title, price, qty) VALUES (?, ?, ?, ?)"
       );
       for (const item of normalized) {
-        insertItem.run(orderInfo.lastInsertRowid, item.title, item.price, item.qty);
+        await insertItem.run(orderInfo.lastInsertRowid, item.title, item.price, item.qty);
       }
 
       sendJson(res, 201, { ok: true, orderId: orderInfo.lastInsertRowid, total });
@@ -347,9 +347,9 @@ function createApi({ db, bcrypt }) {
     }
 
     if (pathname === "/api/admin/orders" && req.method === "GET") {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
 
-      const rows = db
+      const rows = await db
         .prepare(
           `SELECT o.id, o.client_name, o.client_phone, o.total, o.status, o.created_at,
                   GROUP_CONCAT(oi.product_title || ' x' || oi.qty, ', ') AS items_summary
@@ -376,7 +376,7 @@ function createApi({ db, bcrypt }) {
     }
 
     if (pathname === "/api/admin/menu" && req.method === "POST") {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
 
       const body = await readJsonBody(req, res);
       if (body === null) return;
@@ -387,9 +387,10 @@ function createApi({ db, bcrypt }) {
         return;
       }
 
-      const sortOrder =
-        db.prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM menu_items").get().next;
-      const info = db
+      const sortOrder = Number(
+        (await db.prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM menu_items").get()).next
+      );
+      const info = await db
         .prepare(
           `INSERT INTO menu_items (title, description, meta, price, image, is_new, sort_order)
            VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -404,7 +405,7 @@ function createApi({ db, bcrypt }) {
           sortOrder
         );
 
-      const row = db
+      const row = await db
         .prepare(
           "SELECT id, title, description, meta, price, image, is_new FROM menu_items WHERE id = ?"
         )
@@ -415,10 +416,10 @@ function createApi({ db, bcrypt }) {
 
     const menuMatch = pathname.match(/^\/api\/admin\/menu\/(\d+)$/);
     if (menuMatch && req.method === "PUT") {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
 
       const id = Number(menuMatch[1]);
-      const existing = db.prepare("SELECT id FROM menu_items WHERE id = ?").get(id);
+      const existing = await db.prepare("SELECT id FROM menu_items WHERE id = ?").get(id);
       if (!existing) {
         sendJson(res, 404, { error: "Позиция не найдена" });
         return;
@@ -433,7 +434,7 @@ function createApi({ db, bcrypt }) {
         return;
       }
 
-      db.prepare(
+      await db.prepare(
         `UPDATE menu_items
          SET title = ?, description = ?, meta = ?, price = ?, image = ?, is_new = ?
          WHERE id = ?`
@@ -447,7 +448,7 @@ function createApi({ db, bcrypt }) {
         id
       );
 
-      const row = db
+      const row = await db
         .prepare(
           "SELECT id, title, description, meta, price, image, is_new FROM menu_items WHERE id = ?"
         )
@@ -457,10 +458,10 @@ function createApi({ db, bcrypt }) {
     }
 
     if (menuMatch && req.method === "DELETE") {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
 
       const id = Number(menuMatch[1]);
-      const info = db.prepare("UPDATE menu_items SET is_active = 0 WHERE id = ?").run(id);
+      const info = await db.prepare("UPDATE menu_items SET is_active = 0 WHERE id = ?").run(id);
       if (!info.changes) {
         sendJson(res, 404, { error: "Позиция не найдена" });
         return;
@@ -470,7 +471,7 @@ function createApi({ db, bcrypt }) {
     }
 
     if (pathname === "/api/admin/news" && req.method === "POST") {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
 
       const body = await readJsonBody(req, res);
       if (body === null) return;
@@ -481,20 +482,20 @@ function createApi({ db, bcrypt }) {
         return;
       }
 
-      const info = db
+      const info = await db
         .prepare("INSERT INTO news (title, date_label, body) VALUES (?, ?, ?)")
         .run(parsed.title, parsed.dateLabel, parsed.text);
-      const row = db.prepare("SELECT id, title, date_label, body FROM news WHERE id = ?").get(info.lastInsertRowid);
+      const row = await db.prepare("SELECT id, title, date_label, body FROM news WHERE id = ?").get(info.lastInsertRowid);
       sendJson(res, 201, { item: newsRowToClient(row) });
       return;
     }
 
     const newsMatch = pathname.match(/^\/api\/admin\/news\/(\d+)$/);
     if (newsMatch && req.method === "PUT") {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
 
       const id = Number(newsMatch[1]);
-      const existing = db.prepare("SELECT id FROM news WHERE id = ?").get(id);
+      const existing = await db.prepare("SELECT id FROM news WHERE id = ?").get(id);
       if (!existing) {
         sendJson(res, 404, { error: "Новость не найдена" });
         return;
@@ -509,22 +510,22 @@ function createApi({ db, bcrypt }) {
         return;
       }
 
-      db.prepare("UPDATE news SET title = ?, date_label = ?, body = ? WHERE id = ?").run(
+      await db.prepare("UPDATE news SET title = ?, date_label = ?, body = ? WHERE id = ?").run(
         parsed.title,
         parsed.dateLabel,
         parsed.text,
         id
       );
-      const row = db.prepare("SELECT id, title, date_label, body FROM news WHERE id = ?").get(id);
+      const row = await db.prepare("SELECT id, title, date_label, body FROM news WHERE id = ?").get(id);
       sendJson(res, 200, { item: newsRowToClient(row) });
       return;
     }
 
     if (newsMatch && req.method === "DELETE") {
-      if (!requireAdmin(req, res)) return;
+      if (!(await requireAdmin(req, res))) return;
 
       const id = Number(newsMatch[1]);
-      const info = db.prepare("DELETE FROM news WHERE id = ?").run(id);
+      const info = await db.prepare("DELETE FROM news WHERE id = ?").run(id);
       if (!info.changes) {
         sendJson(res, 404, { error: "Новость не найдена" });
         return;

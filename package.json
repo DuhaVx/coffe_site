@@ -8,9 +8,13 @@
     "node": ">=22.5.0"
   },
   "scripts": {
-    "start": "node scripts/free-port.js 3000 && node server/index.js"
+    "start": "node scripts/free-port.js 3000 && node server/index.js",
+    "start:prod": "node server/index.js",
+    "db:init": "node scripts/db-init.js"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3"
+    "@libsql/client": "^0.14.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.7"
   }
 }

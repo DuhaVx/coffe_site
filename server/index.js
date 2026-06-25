@@ -3,7 +3,9 @@ const fs = require("fs");
 const path = require("path");
 const { URL } = require("url");
 
-const { openDatabase, seedMenu, seedNews, seedAdmin, dbPath } = require("./db");
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+
+const { openDatabase, seedMenu, seedNews, seedAdmin } = require("./db");
 const { createApi } = require("./api");
 const { sendJson } = require("./lib/http");
 
@@ -36,13 +38,6 @@ const contentTypes = {
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon"
 };
-
-const db = openDatabase();
-seedMenu(db);
-seedNews(db);
-seedAdmin(db, bcrypt);
-
-const { handleApi } = createApi({ db, bcrypt });
 
 function isBlockedStaticPath(pathname) {
   const lower = pathname.toLowerCase();
@@ -99,32 +94,46 @@ function serveStatic(req, res) {
   });
 }
 
-const serverInstance = http.createServer(async (req, res) => {
-  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
-  const pathname = url.pathname;
+async function main() {
+  const { db, dbLabel, mode } = await openDatabase();
+  await seedMenu(db);
+  await seedNews(db);
+  await seedAdmin(db, bcrypt);
 
-  if (pathname.startsWith("/api/")) {
-    try {
-      await handleApi(req, res, pathname);
-    } catch (e) {
-      console.error(e);
-      sendJson(res, 500, { error: "Ошибка сервера" });
+  const { handleApi } = createApi({ db, bcrypt, dbMode: mode });
+
+  const serverInstance = http.createServer(async (req, res) => {
+    const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+    const pathname = url.pathname;
+
+    if (pathname.startsWith("/api/")) {
+      try {
+        await handleApi(req, res, pathname);
+      } catch (e) {
+        console.error(e);
+        sendJson(res, 500, { error: "Ошибка сервера" });
+      }
+      return;
     }
-    return;
-  }
 
-  serveStatic(req, res);
-});
+    serveStatic(req, res);
+  });
 
-serverInstance.on("error", (err) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(`\nПорт ${port} занят. Выполните: npm start`);
-    console.error("Скрипт сам освободит порт. Либо закройте старый терминал с сервером.\n");
-  }
-  throw err;
-});
+  serverInstance.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`\nПорт ${port} занят. Выполните: npm start`);
+      console.error("Скрипт сам освободит порт. Либо закройте старый терминал с сервером.\n");
+    }
+    throw err;
+  });
 
-serverInstance.listen(port, () => {
-  console.log(`Сервер: http://localhost:${port}`);
-  console.log(`БД (только сервер): ${dbPath}`);
+  serverInstance.listen(port, () => {
+    console.log(`Сервер: http://localhost:${port}`);
+    console.log(`БД (${mode}): ${dbLabel}`);
+  });
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
