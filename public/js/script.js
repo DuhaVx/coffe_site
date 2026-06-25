@@ -32,39 +32,11 @@ let logoKnopka, menuGrid, checkoutBtn, orderName, orderPhone;
 let adminSection, adminPanel, adminForm, newsForm, ordersList;
 let adminMenuCount, adminOrdersToday, adminMenuList, newsGrid, adminNewsList;
 
-const defaultNews = [
-  { id: 1, title: "Новая партия из Минас-Жерайс", date: "27 мая", text: "Привезли свежую Бразилию под фильтр. Вкус: какао, орех, сухофрукты. Будет в меню до конца недели." },
-  { id: 2, title: "Обновили вечерний спешл", date: "25 мая", text: "После 19:00 делаем сет: эспрессо + мини-шу по фиксированной цене. Хотели сделать просто по-соседски." }
-];
+let napitki = [];
+let novosti = [];
+let zakazy = [];
 
-function loadNonEmptyArray(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) return fallback;
-    return parsed;
-  } catch {
-    return fallback;
-  }
-}
-
-function loadArray(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-let napitki = loadMenuItems();
-const zakazy = loadArray("zakazy-obvodny", []);
-let novosti = loadNonEmptyArray("news-obvodny", defaultNews);
-
-function initApp() {
+async function initApp() {
   cartKnopka = document.getElementById("cartToggle");
   modalka = document.getElementById("cartModal");
   closeKnopka = document.getElementById("closeCart");
@@ -97,6 +69,15 @@ function initApp() {
     return;
   }
 
+  try {
+    napitki = await fetchMenuItems();
+    novosti = await fetchNewsItems();
+  } catch (e) {
+    showFatal(`Не удалось загрузить данные с сервера: ${e.message}`);
+    napitki = loadMenuItems();
+    novosti = [];
+  }
+
   if (menuGrid) {
     menuGrid.addEventListener("click", (e) => {
       const btn = e.target.closest(".add-btn");
@@ -107,36 +88,45 @@ function initApp() {
 
   initCartUI();
 
-
   if (adminForm) adminForm.addEventListener("submit", dobavitNapitok);
   if (newsForm) newsForm.addEventListener("submit", dobavitNovost);
 
   if (menuGrid) renderMenu();
   renderNews();
-  renderOrders();
+  await refreshOrders();
   renderAdminMenu();
   renderAdminNews();
   updateAdminStats();
+
+  window.addEventListener("volna-menu-updated", () => {
+    napitki = loadMenuItems();
+    if (menuGrid) renderMenu();
+    renderAdminMenu();
+    updateAdminStats();
+  });
+
+  window.addEventListener("volna-orders-updated", refreshOrders);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  try {
-    initApp();
-  } catch (e) {
+  initApp().catch((e) => {
     showFatal(`JS упал: ${e && e.message ? e.message : String(e)}`);
-  }
+  });
 });
 
-function saveMenu() {
-  saveMenuItems(napitki);
-}
-
-function saveOrders() {
-  localStorage.setItem("zakazy-obvodny", JSON.stringify(zakazy));
-}
-
-function saveNews() {
-  localStorage.setItem("news-obvodny", JSON.stringify(novosti));
+async function refreshOrders() {
+  try {
+    const me = await fetchMe();
+    if (me.user && me.user.isAdmin) {
+      zakazy = await fetchAdminOrders();
+    } else {
+      zakazy = [];
+    }
+  } catch {
+    zakazy = [];
+  }
+  renderOrders();
+  updateAdminStats();
 }
 
 function renderMenu() {
@@ -189,6 +179,7 @@ function renderNews() {
 }
 
 function renderAdminNews() {
+  if (!adminNewsList) return;
   adminNewsList.innerHTML = "";
   if (!novosti.length) {
     adminNewsList.innerHTML = "<li>Пусто</li>";
@@ -215,6 +206,7 @@ function renderAdminNews() {
 }
 
 function renderAdminMenu() {
+  if (!adminMenuList) return;
   adminMenuList.innerHTML = "";
   if (!napitki.length) {
     adminMenuList.innerHTML = "<li>Пусто</li>";
@@ -241,6 +233,7 @@ function renderAdminMenu() {
 }
 
 function renderOrders() {
+  if (!ordersList) return;
   ordersList.innerHTML = "";
   const slice = zakazy.slice(0, 7);
   if (!slice.length) {
@@ -249,7 +242,7 @@ function renderOrders() {
   }
   for (const z of slice) {
     const li = document.createElement("li");
-    li.textContent = `${z.data} — ${z.client || "Гость"} (${z.phone || "-"}) — ${z.items.length} поз. — ${z.total} ₽`;
+    li.textContent = `${z.data} — ${z.client || "Гость"} (${z.phone || "-"}) — ${z.itemsSummary || "заказ"} — ${z.total} ₽`;
     ordersList.appendChild(li);
   }
 }
@@ -269,45 +262,50 @@ function setupAdminAccess() {
     });
 }
 
-function dobavitNapitok(e) {
+async function dobavitNapitok(e) {
   e.preventDefault();
   const title = document.getElementById("newTitle").value.trim();
-  let price = Number(document.getElementById("newPrice").value);
-  const image = document.getElementById("newImage").value.trim() || "https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=900&q=80";
-  if (!title || !price) {
-    return;
+  const price = Number(document.getElementById("newPrice").value);
+  const image = document.getElementById("newImage").value.trim() || "assets/coffee-1.svg";
+  if (!title || !price) return;
+
+  try {
+    await createMenuItem({
+      nazvanie: title,
+      cena: price,
+      image,
+      opis: "Новая позиция от бариста",
+      meta: "порция"
+    });
+    napitki = loadMenuItems();
+    if (menuGrid) renderMenu();
+    renderAdminMenu();
+    updateAdminStats();
+    adminForm.reset();
+  } catch (err) {
+    alert(err.message || "Не удалось добавить позицию");
   }
-  napitki.push({
-    id: Date.now(),
-    nazvanie: title,
-    cena: price,
-    image,
-    opis: "Новая позиция от бариста",
-    meta: "порция",
-    isNew: false
-  });
-  saveMenuItems(napitki);
-  napitki = loadMenuItems();
-  if (menuGrid) renderMenu();
-  renderAdminMenu();
-  updateAdminStats();
-  adminForm.reset();
 }
 
-function dobavitNovost(e) {
+async function dobavitNovost(e) {
   e.preventDefault();
   const title = document.getElementById("newsTitle").value.trim();
   const date = document.getElementById("newsDate").value.trim();
   const text = document.getElementById("newsText").value.trim();
   if (!title || !date || !text) return;
-  novosti.unshift({ id: Date.now(), title, date, text });
-  saveNews();
-  renderNews();
-  renderAdminNews();
-  newsForm.reset();
+
+  try {
+    const item = await createNewsItem({ title, date, text });
+    novosti.unshift(item);
+    renderNews();
+    renderAdminNews();
+    newsForm.reset();
+  } catch (err) {
+    alert(err.message || "Не удалось добавить новость");
+  }
 }
 
-function pravkaNovost(id) {
+async function pravkaNovost(id) {
   const idx = novosti.findIndex((x) => x.id === id);
   if (idx === -1) return;
   const newTitle = prompt("Новый заголовок", novosti[idx].title);
@@ -316,15 +314,22 @@ function pravkaNovost(id) {
   if (!newDate) return;
   const newText = prompt("Новый текст", novosti[idx].text);
   if (!newText) return;
-  novosti[idx].title = newTitle.trim();
-  novosti[idx].date = newDate.trim();
-  novosti[idx].text = newText.trim();
-  saveNews();
-  renderNews();
-  renderAdminNews();
+
+  try {
+    const item = await updateNewsItem(id, {
+      title: newTitle.trim(),
+      date: newDate.trim(),
+      text: newText.trim()
+    });
+    novosti[idx] = item;
+    renderNews();
+    renderAdminNews();
+  } catch (err) {
+    alert(err.message || "Не удалось обновить новость");
+  }
 }
 
-function pravkaNapitka(id) {
+async function pravkaNapitka(id) {
   const idx = napitki.findIndex((x) => x.id === id);
   if (idx === -1) return;
   const item = napitki[idx];
@@ -342,40 +347,52 @@ function pravkaNapitka(id) {
   const newMeta = prompt("Порция / объём (например 300 мл)", item.meta || "");
   if (newMeta === null) return;
 
-  napitki[idx] = {
-    ...item,
-    nazvanie: newTitle.trim(),
-    cena: newPrice,
-    opis: newOpis.trim() || item.opis,
-    meta: newMeta.trim() || item.meta
-  };
-  saveMenuItems(napitki);
-  napitki = loadMenuItems();
-  if (menuGrid) renderMenu();
-  renderAdminMenu();
-  updateAdminStats();
+  try {
+    await updateMenuItem(id, {
+      nazvanie: newTitle.trim(),
+      cena: newPrice,
+      opis: newOpis.trim() || item.opis,
+      meta: newMeta.trim() || item.meta,
+      image: item.image,
+      isNew: item.isNew
+    });
+    napitki = loadMenuItems();
+    if (menuGrid) renderMenu();
+    renderAdminMenu();
+    updateAdminStats();
+  } catch (err) {
+    alert(err.message || "Не удалось обновить позицию");
+  }
 }
 
-const udalitNapitok = (id) => {
-  napitki = napitki.filter((x) => x.id !== id);
-  saveMenuItems(napitki);
-  napitki = loadMenuItems();
-  if (menuGrid) renderMenu();
-  renderAdminMenu();
-  updateAdminStats();
-};
+async function udalitNapitok(id) {
+  try {
+    await deleteMenuItem(id);
+    napitki = loadMenuItems();
+    if (menuGrid) renderMenu();
+    renderAdminMenu();
+    updateAdminStats();
+  } catch (err) {
+    alert(err.message || "Не удалось удалить позицию");
+  }
+}
 
-function udalitNovost(id) {
-  novosti = novosti.filter((x) => x.id !== id);
-  saveNews();
-  renderNews();
-  renderAdminNews();
+async function udalitNovost(id) {
+  try {
+    await deleteNewsItem(id);
+    novosti = novosti.filter((x) => x.id !== id);
+    renderNews();
+    renderAdminNews();
+  } catch (err) {
+    alert(err.message || "Не удалось удалить новость");
+  }
 }
 
 function updateAdminStats() {
-  adminMenuCount.textContent = napitki.length;
+  if (adminMenuCount) adminMenuCount.textContent = napitki.length;
+  if (!adminOrdersToday) return;
   const segodnya = new Date().toLocaleDateString("ru-RU");
-  const count = zakazy.filter((item) => item.data.includes(segodnya)).length;
+  const count = zakazy.filter((item) => String(item.data).includes(segodnya)).length;
   adminOrdersToday.textContent = count;
 }
 

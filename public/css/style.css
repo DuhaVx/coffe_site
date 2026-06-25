@@ -138,7 +138,7 @@ body {
 
 .hero {
   min-height: 36vh;
-  background-image: linear-gradient(rgba(15, 15, 15, 0.45), rgba(15, 15, 15, 0.65)), url("assets/67.avif");
+  background-image: linear-gradient(rgba(15, 15, 15, 0.45), rgba(15, 15, 15, 0.65)), url("../assets/67.avif");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -552,7 +552,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 40px 22px;
-  background-image: linear-gradient(rgba(15, 15, 15, 0.82), rgba(15, 15, 15, 0.92)), url("assets/67.avif");
+  background-image: linear-gradient(rgba(15, 15, 15, 0.82), rgba(15, 15, 15, 0.92)), url("../assets/67.avif");
   background-size: cover;
   background-position: center;
 }

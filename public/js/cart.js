@@ -2,7 +2,7 @@ let korzina = [];
 
 function loadKorzina() {
   try {
-    const raw = localStorage.getItem("korzina-obvodny");
+    const raw = sessionStorage.getItem("korzina-obvodny");
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -12,7 +12,7 @@ function loadKorzina() {
 }
 
 function saveKorzina() {
-  localStorage.setItem("korzina-obvodny", JSON.stringify(korzina));
+  sessionStorage.setItem("korzina-obvodny", JSON.stringify(korzina));
 }
 
 function addToKorzina(nazvanie, cena) {
@@ -88,46 +88,52 @@ function renderKorzina() {
   cartCount.textContent = korzina.length;
 }
 
-function sdelatZakaz() {
+async function sdelatZakaz() {
   if (!korzina.length) {
     alert("Корзина пустая");
     return;
   }
+
+  let user = null;
+  try {
+    const me = await fetchMe();
+    user = me.user;
+  } catch {
+    user = null;
+  }
+
+  if (!user) {
+    alert("Для оформления заказа нужно войти в аккаунт");
+    window.location.href = "/login.html";
+    return;
+  }
+
   const orderName = document.getElementById("orderName");
   const orderPhone = document.getElementById("orderPhone");
-  const fio = orderName?.value.trim() || "";
-  const tel = orderPhone?.value.trim() || "";
+  const fio = orderName?.value.trim() || [user.lastName, user.firstName].filter(Boolean).join(" ") || user.login;
+  const tel = orderPhone?.value.trim() || user.phone;
+
   if (!fio || !tel) {
     alert("Заполни имя и телефон");
     return;
   }
 
-  let zakazy = [];
   try {
-    const raw = localStorage.getItem("zakazy-obvodny");
-    zakazy = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(zakazy)) zakazy = [];
-  } catch {
-    zakazy = [];
+    await createOrder({
+      clientName: fio,
+      clientPhone: tel,
+      items: korzina.map((item) => ({ nazvanie: item.nazvanie, cena: item.cena, qty: 1 }))
+    });
+
+    korzina = [];
+    saveKorzina();
+    if (orderName) orderName.value = "";
+    if (orderPhone) orderPhone.value = "";
+    renderKorzina();
+    toggleCart();
+    alert(`Заказ принят, ${fio}`);
+    window.dispatchEvent(new CustomEvent("volna-orders-updated"));
+  } catch (err) {
+    alert(err.message || "Не удалось оформить заказ");
   }
-
-  const itog = korzina.reduce((acc, item) => acc + item.cena, 0);
-  zakazy.unshift({
-    id: Date.now(),
-    data: new Date().toLocaleString("ru-RU"),
-    client: fio,
-    phone: tel,
-    items: [...korzina],
-    total: itog,
-    status: "new"
-  });
-  localStorage.setItem("zakazy-obvodny", JSON.stringify(zakazy));
-
-  korzina = [];
-  saveKorzina();
-  if (orderName) orderName.value = "";
-  if (orderPhone) orderPhone.value = "";
-  renderKorzina();
-  toggleCart();
-  alert(`Заказ принят, ${fio}`);
 }

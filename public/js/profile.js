@@ -71,29 +71,15 @@ async function parseApiResponse(res) {
 }
 
 async function saveField(field, value) {
-  const payload = JSON.stringify({ field, value });
-  const opts = {
+  const res = await fetch("/api/me/update", {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "same-origin",
-    body: payload
-  };
-
-  const endpoints = [
-    { url: "/api/me/update", method: "POST" },
-    { url: "/api/profile/update", method: "POST" },
-    { url: "/api/profile", method: "PATCH" },
-    { url: "/api/profile", method: "POST" }
-  ];
-
-  let lastError = "Сервер не обновлён. Остановите старый процесс и выполните: npm start";
-  for (const ep of endpoints) {
-    const res = await fetch(ep.url, { method: ep.method, ...opts });
-    if (res.status === 404) continue;
-    const data = await parseApiResponse(res);
-    if (!res.ok) throw new Error(data.error || "Ошибка сохранения");
-    return data.user;
-  }
-  throw new Error(lastError);
+    body: JSON.stringify({ field, value })
+  });
+  const data = await parseApiResponse(res);
+  if (!res.ok) throw new Error(data.error || "Ошибка сохранения");
+  return data.user;
 }
 
 async function checkServerApi() {
@@ -101,7 +87,7 @@ async function checkServerApi() {
     const res = await fetch("/api/health", { credentials: "same-origin" });
     if (!res.ok) return false;
     const data = await res.json();
-    return data.apiVersion >= 2 && data.profileUpdate;
+    return data.apiVersion >= 3;
   } catch {
     return false;
   }

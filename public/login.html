@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ВОЛНА — Регистрация</title>
+  <title>ВОЛНА — Вход</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="/assets/logo-volna.svg" type="image/svg+xml">
 </head>
 <body class="auth-page">
@@ -36,19 +36,19 @@
 
   <main class="auth-main">
     <section class="auth-card">
-      <h1>Регистрация</h1>
-      <p class="auth-lead">Создай аккаунт по логину и паролю</p>
-      <form id="registerForm" class="auth-form" novalidate>
-        <label class="field-label" for="regLogin">Логин</label>
-        <input id="regLogin" name="login" type="text" autocomplete="username" required minlength="3" placeholder="Придумай логин">
+      <h1>Вход</h1>
+      <p class="auth-lead">Войди по логину и паролю</p>
+      <form id="loginForm" class="auth-form" novalidate>
+        <label class="field-label" for="loginUser">Логин</label>
+        <input id="loginUser" name="login" type="text" autocomplete="username" required placeholder="Твой логин">
 
-        <label class="field-label" for="regPassword">Пароль</label>
-        <input id="regPassword" name="password" type="password" autocomplete="new-password" required minlength="4" placeholder="Минимум 4 символа">
+        <label class="field-label" for="loginPass">Пароль</label>
+        <input id="loginPass" name="password" type="password" autocomplete="current-password" required placeholder="Твой пароль">
 
-        <p id="registerMsg" class="auth-msg" aria-live="polite"></p>
-        <button type="submit" class="auth-submit">Зарегистрироваться</button>
+        <p id="loginMsg" class="auth-msg" aria-live="polite"></p>
+        <button type="submit" class="auth-submit">Войти</button>
       </form>
-      <p class="auth-switch">Уже есть аккаунт? <a href="/login.html">Войти</a></p>
+      <p class="auth-switch">Нет аккаунта? <a href="/register.html">Зарегистрироваться</a></p>
     </section>
   </main>
 
@@ -66,20 +66,24 @@
     </div>
   </footer>
 
-  <script src="auth.js"></script>
+  <script src="js/auth.js"></script>
   <script>
-    initSiteHeader({ activePage: "register" });
+    initSiteHeader({ activePage: "login" });
 
-    const form = document.getElementById("registerForm");
-    const msg = document.getElementById("registerMsg");
+    fetchMe().then(({ user }) => {
+      if (user) window.location.href = "/profile.html";
+    });
+
+    const form = document.getElementById("loginForm");
+    const msg = document.getElementById("loginMsg");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const login = document.getElementById("regLogin").value.trim();
-      const password = document.getElementById("regPassword").value;
-      showAuthMessage(msg, "Отправка…", false);
+      const login = document.getElementById("loginUser").value.trim();
+      const password = document.getElementById("loginPass").value;
+      showAuthMessage(msg, "Проверяем…", false);
       try {
-        const res = await fetch("/api/register", {
+        const res = await fetch("/api/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
@@ -87,17 +91,20 @@
         });
         const data = await res.json();
         if (!res.ok) {
-          showAuthMessage(msg, data.error || "Ошибка регистрации", true);
+          showAuthMessage(msg, data.error || "Ошибка входа", true);
           return;
         }
-        showAuthMessage(msg, "Готово! Переходим в кабинет…", false);
-        window.location.href = "/profile.html";
+        if (data.isAdmin) {
+          window.location.href = "/#admin";
+        } else {
+          window.location.href = "/profile.html";
+        }
       } catch {
         showAuthMessage(msg, "Сервер недоступен. Запустите npm start", true);
       }
     });
 
-    const phrases = ["Кофе — это язык, на котором говорит утро.", "Сначала глоток, потом разговор."];
+    const phrases = ["На волне даже тишина пахнет зерном.", "Горько, крепко, по-питерски."];
     const phraseEl = document.getElementById("dayPhrase");
     if (phraseEl) phraseEl.textContent = phrases[Math.floor(Math.random() * phrases.length)];
   </script>

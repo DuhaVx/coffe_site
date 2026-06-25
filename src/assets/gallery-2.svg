@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600">
-  <rect width="900" height="600" fill="#171515"/>
-  <rect x="70" y="350" width="760" height="120" fill="#3a2d26"/>
-  <rect x="120" y="210" width="90" height="140" fill="#2a211e"/>
-  <rect x="250" y="190" width="90" height="160" fill="#2a211e"/>
-  <rect x="380" y="220" width="90" height="130" fill="#2a211e"/>
-  <rect x="510" y="200" width="90" height="150" fill="#2a211e"/>
-  <rect x="640" y="215" width="90" height="135" fill="#2a211e"/>
-</svg>

@@ -1,8 +1,14 @@
-function renderMenuCatalog() {
+async function renderMenuCatalog() {
   const grid = document.getElementById("menuCatalog");
   if (!grid) return;
 
-  const items = loadMenuItems();
+  let items;
+  try {
+    items = await fetchMenuItems();
+  } catch {
+    items = loadMenuItems();
+  }
+
   grid.innerHTML = "";
 
   items.forEach((item, index) => {
@@ -65,10 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initSiteHeader();
   initCartUI();
   renderMenuCatalog();
-
-  window.addEventListener("storage", (e) => {
-    if (e.key === MENU_STORAGE_KEY) renderMenuCatalog();
-  });
 
   window.addEventListener("volna-menu-updated", renderMenuCatalog);
   window.addEventListener("pageshow", renderMenuCatalog);
